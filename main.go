@@ -32,13 +32,15 @@ func main() {
 
 	gc.Send <- msg
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 loop:
 	for {
 		select {
-		case <-done:
+		case <-interrupt:
+			gc.Close()
+		case <-gc.Done:
 			break loop
 		case <-gc.Recv:
 			continue

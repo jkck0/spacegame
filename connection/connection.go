@@ -18,6 +18,7 @@ type GameConn struct {
 	Send chan<- message.Message
 	// used for the readHandler to tell the writeHandler to pong
 	ping chan int
+	Done chan struct{}
 }
 
 func Connect(u url.URL, debug bool) (*GameConn, error) {
@@ -42,6 +43,7 @@ func Connect(u url.URL, debug bool) (*GameConn, error) {
 }
 
 func (gc *GameConn) readHandler(out chan<- message.Message, debug bool) {
+	defer close(gc.Done)
 	for {
 		_, r, err := gc.conn.NextReader()
 		if err != nil {
@@ -81,6 +83,8 @@ func (gc *GameConn) writeHandler(in <-chan message.Message) {
 
 	for {
 		select {
+		case <-gc.Done:
+			return
 		case <-gc.ping:
 			err := gc.sendMessage(pong)
 			if err != nil {
@@ -114,5 +118,5 @@ func (gc *GameConn) sendMessage(msg message.Message) error {
 }
 
 func (gc *GameConn) Close() {
-	gc.conn.Close()
+	gc.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 }
