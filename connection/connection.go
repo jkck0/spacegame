@@ -30,10 +30,14 @@ func Connect(u url.URL, debug bool) (*GameConn, error) {
 
 	recv := make(chan message.Message)
 	send := make(chan message.Message)
+	ping := make(chan int)
+	done := make(chan struct{})
 	gc := &GameConn{
 		conn: c,
 		Recv: recv,
 		Send: send,
+		ping: ping,
+		Done: done,
 	}
 
 	go gc.readHandler(recv, debug)
